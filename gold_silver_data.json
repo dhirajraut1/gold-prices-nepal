@@ -452,13 +452,13 @@
       {
         "date": 29,
         "fine_gold": 53300.0,
-        "standard_gold": NaN,
+        "standard_gold": 0.0,
         "silver": 715.0
       },
       {
         "date": 30,
         "fine_gold": 53000.0,
-        "standard_gold": NaN,
+        "standard_gold": 0.0,
         "silver": 710.0
       }
     ],
@@ -3071,7 +3071,7 @@
         "date": 3,
         "fine_gold": 59400.0,
         "standard_gold": 59100.0,
-        "silver": NaN
+        "silver": 0.0
       },
       {
         "date": 4,
@@ -7345,7 +7345,7 @@
       },
       {
         "date": 10,
-        "fine_gold": NaN,
+        "fine_gold": 0.0,
         "standard_gold": 90000.0,
         "silver": 1295.0
       },
@@ -9268,8 +9268,8 @@
       {
         "date": 26,
         "fine_gold": 94800.0,
-        "standard_gold": NaN,
-        "silver": NaN
+        "standard_gold": 0.0,
+        "silver": 0.0
       }
     ],
     "Shrawan": [
@@ -13724,7 +13724,7 @@
       {
         "date": 2,
         "fine_gold": 151400.0,
-        "standard_gold": NaN,
+        "standard_gold": 0.0,
         "silver": 1840.0
       },
       {
@@ -14106,7 +14106,7 @@
       {
         "date": 16,
         "fine_gold": 168100.0,
-        "standard_gold": NaN,
+        "standard_gold": 0.0,
         "silver": 1915.0
       },
       {
@@ -14388,7 +14388,7 @@
       {
         "date": 12,
         "fine_gold": 189600.0,
-        "standard_gold": NaN,
+        "standard_gold": 0.0,
         "silver": 2000.0
       },
       {
