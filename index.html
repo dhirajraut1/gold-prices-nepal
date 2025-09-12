@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Nepal Gold & Silver Price Tracker</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/luxon@3.3.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.3.1"></script>
+    <style>
+      :root {
+        --primary-color: #ffd700;
+        --secondary-color: #c0c0c0;
+        --accent-color: #2c3e50;
+        --background-color: #f8f9fa;
+        --card-bg: #ffffff;
+        --text-color: #333333;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: var(--text-color);
+        min-height: 100vh;
+        padding: 20px;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+
+      header {
+        text-align: center;
+        margin-bottom: 40px;
+        color: white;
+      }
+
+      header h1 {
+        font-size: 2.5rem;
+        margin-bottom: 10px;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+      }
+
+      header p {
+        font-size: 1.1rem;
+        opacity: 0.9;
+      }
+
+      .card {
+        background: var(--card-bg);
+        border-radius: 15px;
+        padding: 25px;
+        margin-bottom: 30px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        backdrop-filter: blur(10px);
+      }
+
+      .controls {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+        margin-bottom: 25px;
+      }
+
+      .control-group {
+        display: flex;
+        flex-direction: column;
+      }
+
+      label {
+        font-weight: 600;
+        margin-bottom: 8px;
+        color: var(--accent-color);
+      }
+
+      select,
+      button {
+        padding: 12px 15px;
+        border: 2px solid #ddd;
+        border-radius: 8px;
+        font-size: 16px;
+        background: white;
+        transition: all 0.3s ease;
+      }
+
+      select:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.1);
+      }
+
+      button {
+        background: linear-gradient(45deg, var(--primary-color), #ffed4e);
+        border: none;
+        color: var(--accent-color);
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 0.2s ease;
+      }
+
+      button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+      }
+
+      .chart-container {
+        position: relative;
+        height: 400px;
+        margin-top: 20px;
+      }
+
+      .chart-title {
+        text-align: center;
+        font-size: 1.4rem;
+        margin-bottom: 20px;
+        color: var(--accent-color);
+        font-weight: 600;
+      }
+
+      .stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        margin-top: 20px;
+      }
+
+      .stat-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 15px;
+        border-radius: 10px;
+        text-align: center;
+      }
+
+      .stat-value {
+        font-size: 1.8rem;
+        font-weight: bold;
+        margin: 10px 0;
+      }
+
+      .stat-label {
+        font-size: 0.9rem;
+        opacity: 0.9;
+      }
+
+      @media (max-width: 768px) {
+        .controls {
+          grid-template-columns: 1fr;
+        }
+
+        header h1 {
+          font-size: 2rem;
+        }
+
+        .chart-container {
+          height: 300px;
+        }
+      }
+
+      .metal-toggle {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 15px;
+      }
+
+      .metal-btn {
+        flex: 1;
+        padding: 10px;
+        border: 2px solid #ddd;
+        background: white;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-align: center;
+      }
+
+      .metal-btn.active {
+        background: linear-gradient(45deg, var(--primary-color), #ffed4e);
+        border-color: var(--primary-color);
+        color: var(--accent-color);
+        font-weight: 600;
+      }
+
+      .metal-btn.silver.active {
+        background: linear-gradient(45deg, var(--secondary-color), #e0e0e0);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>🇳🇵 Nepal Gold & Silver Prices</h1>
+        <p>Track historical prices of gold and silver in Nepalese market</p>
+      </header>
+
+      <div class="card">
+        <h2 class="chart-title">Yearly Price Trends</h2>
+        <div class="controls">
+          <div class="control-group">
+            <label for="yearSelect">Select Year:</label>
+            <select id="yearSelect">
+              <option value="2074">2074 BS</option>
+              <option value="2075">2075 BS</option>
+              <option value="2076">2076 BS</option>
+              <option value="2077">2077 BS</option>
+              <option value="2078">2078 BS</option>
+              <option value="2079">2079 BS</option>
+              <option value="2080">2080 BS</option>
+              <option value="2081">2081 BS</option>
+              <option value="2082">2082 BS</option>
+            </select>
+          </div>
+          <div class="control-group">
+            <label for="metalType">Metal Type:</label>
+            <div class="metal-toggle">
+              <div class="metal-btn gold active" data-metal="fine_gold">
+                Fine Gold
+              </div>
+              <div class="metal-btn" data-metal="standard_gold">
+                Standard Gold
+              </div>
+              <div class="metal-btn silver" data-metal="silver">Silver</div>
+            </div>
+          </div>
+        </div>
+        <div class="chart-container">
+          <canvas id="yearlyChart"></canvas>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 class="chart-title">Monthly Price Analysis</h2>
+        <div class="controls">
+          <div class="control-group">
+            <label for="monthYearSelect">Select Year:</label>
+            <select id="monthYearSelect">
+              <option value="2074">2074 BS</option>
+              <option value="2075">2075 BS</option>
+              <option value="2076">2076 BS</option>
+              <option value="2077">2077 BS</option>
+              <option value="2078">2078 BS</option>
+              <option value="2079">2079 BS</option>
+              <option value="2080">2080 BS</option>
+              <option value="2081">2081 BS</option>
+              <option value="2082">2082 BS</option>
+            </select>
+          </div>
+          <div class="control-group">
+            <label for="monthSelect">Select Month:</label>
+            <select id="monthSelect">
+              <option value="Baisakh">Baisakh</option>
+              <option value="Jestha">Jestha</option>
+              <option value="Ashad">Ashad</option>
+              <option value="Shrawan">Shrawan</option>
+              <option value="Bhadra">Bhadra</option>
+              <option value="Ashoj">Ashoj</option>
+              <option value="Kartik">Kartik</option>
+              <option value="Mangsir">Mangsir</option>
+              <option value="Poush">Poush</option>
+              <option value="Magh">Magh</option>
+              <option value="Falgun">Falgun</option>
+              <option value="Chaitra">Chaitra</option>
+            </select>
+          </div>
+          <div class="control-group">
+            <label for="monthMetalType">Metal Type:</label>
+            <div class="metal-toggle">
+              <div class="metal-btn gold active" data-metal="fine_gold">
+                Fine Gold
+              </div>
+              <div class="metal-btn" data-metal="standard_gold">
+                Standard Gold
+              </div>
+              <div class="metal-btn silver" data-metal="silver">Silver</div>
+            </div>
+          </div>
+        </div>
+        <div class="chart-container">
+          <canvas id="monthlyChart"></canvas>
+        </div>
+      </div>
+
+      <div class="stats">
+        <div class="stat-card">
+          <div class="stat-label">Current Price (Fine Gold)</div>
+          <div class="stat-value" id="currentGold">Loading...</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Current Price (Silver)</div>
+          <div class="stat-value" id="currentSilver">Loading...</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">30 Day Change</div>
+          <div class="stat-value" id="monthChange">+2.5%</div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Global variables
+      let chartData = {};
+      let currentMetal = "fine_gold";
+      let currentMonthMetal = "fine_gold";
+      let yearlyChart, monthlyChart;
+
+      // Initialize charts
+      function initCharts() {
+        const yearlyCtx = document
+          .getElementById("yearlyChart")
+          .getContext("2d");
+        const monthlyCtx = document
+          .getElementById("monthlyChart")
+          .getContext("2d");
+
+        yearlyChart = new Chart(yearlyCtx, {
+          type: "line",
+          data: {
+            labels: [],
+            datasets: [
+              {
+                label: "Price",
+                data: [],
+                borderColor: "#ffd700",
+                backgroundColor: "rgba(255, 215, 0, 0.1)",
+                borderWidth: 3,
+                tension: 0.4,
+                fill: true,
+                pointBackgroundColor: "#ffd700",
+                pointBorderColor: "#ffffff",
+                pointBorderWidth: 2,
+                pointRadius: 4,
+                pointHoverRadius: 6,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                display: false,
+              },
+              tooltip: {
+                mode: "index",
+                intersect: false,
+                callbacks: {
+                  label: function (context) {
+                    return `${
+                      context.dataset.label
+                    }: रु ${context.parsed.y.toLocaleString()}`;
+                  },
+                },
+              },
+            },
+            scales: {
+              y: {
+                beginAtZero: false,
+                grid: {
+                  color: "rgba(0, 0, 0, 0.1)",
+                },
+                ticks: {
+                  callback: function (value) {
+                    return "रु " + value.toLocaleString();
+                  },
+                },
+              },
+              x: {
+                grid: {
+                  display: false,
+                },
+                ticks: {
+                  maxRotation: 45,
+                  minRotation: 45,
+                },
+              },
+            },
+          },
+        });
+
+        monthlyChart = new Chart(monthlyCtx, {
+          type: "line",
+          data: {
+            labels: [],
+            datasets: [
+              {
+                label: "Price",
+                data: [],
+                borderColor: "#ffd700",
+                backgroundColor: "rgba(255, 215, 0, 0.1)",
+                borderWidth: 3,
+                tension: 0.4,
+                fill: true,
+                pointBackgroundColor: "#ffd700",
+                pointBorderColor: "#ffffff",
+                pointBorderWidth: 2,
+                pointRadius: 4,
+                pointHoverRadius: 6,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                display: false,
+              },
+              tooltip: {
+                mode: "index",
+                intersect: false,
+                callbacks: {
+                  label: function (context) {
+                    return `${
+                      context.dataset.label
+                    }: रु ${context.parsed.y.toLocaleString()}`;
+                  },
+                },
+              },
+            },
+            scales: {
+              y: {
+                beginAtZero: false,
+                grid: {
+                  color: "rgba(0, 0, 0, 0.1)",
+                },
+                ticks: {
+                  callback: function (value) {
+                    return "रु " + value.toLocaleString();
+                  },
+                },
+              },
+              x: {
+                grid: {
+                  display: false,
+                },
+              },
+            },
+          },
+        });
+      }
+
+      // Load data from JSON file
+      async function loadData() {
+        try {
+          const response = await fetch("gold_silver_data.json");
+          if (!response.ok) {
+            throw new Error("Failed to load JSON file");
+          }
+          chartData = await response.json();
+          populateYearDropdowns();
+          updateYearlyChart();
+          updateMonthlyChart();
+          updateStats();
+        } catch (error) {
+          console.error("Error loading data:", error);
+          showError(
+            "Could not load data file. Please make sure gold_silver_data.json is in the same directory."
+          );
+        }
+      }
+
+      function populateYearDropdowns() {
+        const yearSelect = document.getElementById("yearSelect");
+        const monthYearSelect = document.getElementById("monthYearSelect");
+
+        // Clear existing options
+        yearSelect.innerHTML = "";
+        monthYearSelect.innerHTML = "";
+
+        // Get years and sort them numerically
+        const years = Object.keys(chartData).sort(
+          (a, b) => parseInt(a) - parseInt(b)
+        );
+
+        years.forEach((year) => {
+          const option1 = document.createElement("option");
+          option1.value = year;
+          option1.textContent = `${year} BS`;
+
+          const option2 = document.createElement("option");
+          option2.value = year;
+          option2.textContent = `${year} BS`;
+
+          yearSelect.appendChild(option1);
+          monthYearSelect.appendChild(option2);
+        });
+
+        // Set to latest year by default
+        if (years.length > 0) {
+          yearSelect.value = years[years.length - 1];
+          monthYearSelect.value = years[years.length - 1];
+        }
+      }
+
+      function updateYearlyChart() {
+        const year = document.getElementById("yearSelect").value;
+        const data = chartData[year];
+
+        if (!data) {
+          showError(`No data available for year ${year}`);
+          return;
+        }
+
+        const allData = [];
+        const monthOrder = [
+          "Baisakh",
+          "Jestha",
+          "Ashad",
+          "Shrawan",
+          "Bhadra",
+          "Ashoj",
+          "Kartik",
+          "Mangsir",
+          "Mansir",
+          "Poush",
+          "Magh",
+          "Falgun",
+          "Chaitra",
+        ];
+
+        monthOrder.forEach((month) => {
+          if (data[month]) {
+            // Sort days by date within each month
+            const sortedDays = data[month].sort((a, b) => a.date - b.date);
+            sortedDays.forEach((day) => {
+              if (
+                day[currentMetal] !== null &&
+                day[currentMetal] !== undefined
+              ) {
+                allData.push({
+                  x: `${month} ${day.date}`,
+                  y: day[currentMetal],
+                });
+              }
+            });
+          }
+        });
+
+        if (allData.length === 0) {
+          showError(
+            `No ${getMetalName(currentMetal)} data available for ${year}`
+          );
+          return;
+        }
+
+        const metalName = getMetalName(currentMetal);
+        const metalColor = currentMetal === "silver" ? "#c0c0c0" : "#ffd700";
+        const bgColor =
+          currentMetal === "silver"
+            ? "rgba(192, 192, 192, 0.1)"
+            : "rgba(255, 215, 0, 0.1)";
+
+        yearlyChart.data.labels = allData.map((item) => item.x);
+        yearlyChart.data.datasets[0].data = allData.map((item) => item.y);
+        yearlyChart.data.datasets[0].label = metalName;
+        yearlyChart.data.datasets[0].borderColor = metalColor;
+        yearlyChart.data.datasets[0].backgroundColor = bgColor;
+        yearlyChart.data.datasets[0].pointBackgroundColor = metalColor;
+        yearlyChart.update();
+      }
+
+      function updateMonthlyChart() {
+        const year = document.getElementById("monthYearSelect").value;
+        const month = document.getElementById("monthSelect").value;
+        const data = chartData[year]?.[month];
+
+        if (!data) {
+          showError(`No data available for ${month} ${year}`);
+          return;
+        }
+
+        // Sort days by date and filter out days without data
+        const sortedData = data
+          .filter(
+            (day) =>
+              day[currentMonthMetal] !== null &&
+              day[currentMonthMetal] !== undefined
+          )
+          .sort((a, b) => a.date - b.date);
+
+        if (sortedData.length === 0) {
+          showError(
+            `No ${getMetalName(
+              currentMonthMetal
+            )} data available for ${month} ${year}`
+          );
+          return;
+        }
+
+        const monthlyData = sortedData.map((day) => ({
+          x: day.date,
+          y: day[currentMonthMetal],
+        }));
+
+        const metalName = getMetalName(currentMonthMetal);
+        const metalColor =
+          currentMonthMetal === "silver" ? "#c0c0c0" : "#ffd700";
+        const bgColor =
+          currentMonthMetal === "silver"
+            ? "rgba(192, 192, 192, 0.1)"
+            : "rgba(255, 215, 0, 0.1)";
+
+        monthlyChart.data.labels = monthlyData.map((item) => `Day ${item.x}`);
+        monthlyChart.data.datasets[0].data = monthlyData.map((item) => item.y);
+        monthlyChart.data.datasets[0].label = metalName;
+        monthlyChart.data.datasets[0].borderColor = metalColor;
+        monthlyChart.data.datasets[0].backgroundColor = bgColor;
+        monthlyChart.data.datasets[0].pointBackgroundColor = metalColor;
+        monthlyChart.update();
+      }
+
+      function getMetalName(metalType) {
+        switch (metalType) {
+          case "fine_gold":
+            return "Fine Gold";
+          case "standard_gold":
+            return "Standard Gold";
+          case "silver":
+            return "Silver";
+          default:
+            return metalType;
+        }
+      }
+
+      function updateStats() {
+        try {
+          const years = Object.keys(chartData).sort(
+            (a, b) => parseInt(a) - parseInt(b)
+          );
+          if (years.length === 0) return;
+
+          const latestYear = years[years.length - 1];
+          const yearData = chartData[latestYear];
+          const months = Object.keys(yearData);
+
+          if (months.length === 0) return;
+
+          // Get the latest month (assuming months are in order)
+          const latestMonth = months[months.length - 1];
+          const monthData = yearData[latestMonth];
+
+          if (!monthData || monthData.length === 0) return;
+
+          // Get the latest day data
+          const latestDay = monthData[monthData.length - 1];
+
+          if (latestDay.fine_gold) {
+            document.getElementById(
+              "currentGold"
+            ).textContent = `रु ${latestDay.fine_gold.toLocaleString()}`;
+          }
+
+          if (latestDay.silver) {
+            document.getElementById(
+              "currentSilver"
+            ).textContent = `रु ${latestDay.silver.toLocaleString()}`;
+          }
+
+          // Calculate 30-day change (simplified)
+          if (monthData.length > 1) {
+            const firstPrice = monthData[0].fine_gold;
+            const lastPrice = latestDay.fine_gold;
+            if (firstPrice && lastPrice) {
+              const change = ((lastPrice - firstPrice) / firstPrice) * 100;
+              document.getElementById("monthChange").textContent = `${
+                change >= 0 ? "+" : ""
+              }${change.toFixed(1)}%`;
+              document.getElementById("monthChange").style.color =
+                change >= 0 ? "#4caf50" : "#f44336";
+            }
+          }
+        } catch (error) {
+          console.error("Error updating stats:", error);
+        }
+      }
+
+      function showError(message) {
+        console.error(message);
+        // You could add a proper error display UI here
+      }
+
+      // Event listeners
+      function setupEventListeners() {
+        document
+          .getElementById("yearSelect")
+          .addEventListener("change", updateYearlyChart);
+        document
+          .getElementById("monthYearSelect")
+          .addEventListener("change", updateMonthlyChart);
+        document
+          .getElementById("monthSelect")
+          .addEventListener("change", updateMonthlyChart);
+
+        document.querySelectorAll(".metal-toggle .metal-btn").forEach((btn) => {
+          btn.addEventListener("click", function () {
+            const metalType = this.getAttribute("data-metal");
+            const toggleContainer = this.closest(".metal-toggle");
+
+            // Remove active class from all buttons in this toggle group
+            toggleContainer
+              .querySelectorAll(".metal-btn")
+              .forEach((b) => b.classList.remove("active"));
+
+            // Add active class to clicked button
+            this.classList.add("active");
+
+            // Determine which chart to update
+            if (
+              toggleContainer.closest(".control-group").querySelector("label")
+                .textContent === "Metal Type:"
+            ) {
+              currentMetal = metalType;
+              updateYearlyChart();
+            } else {
+              currentMonthMetal = metalType;
+              updateMonthlyChart();
+            }
+          });
+        });
+      }
+
+      // Initialize everything
+      function init() {
+        initCharts();
+        setupEventListeners();
+        loadData();
+      }
+
+      // Start the application
+      init();
+    </script>
+  </body>
+</html>
