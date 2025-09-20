@@ -86,7 +86,7 @@ async function main() {
 
   const __filename = fileURLToPath(import.meta.url);
   const __dirname = dirname(__filename);
-  const filePath = join(__dirname, "../gold_silver_prices.json");
+  const filePath = join(__dirname, "gold_silver_prices.json");
   const data = JSON.parse(fs.readFileSync(filePath, "utf8"));
 
   const exists = data.some((entry) => entry.ad === ad);
@@ -101,4 +101,3 @@ async function main() {
 }
 
 main();
-console.log("Entry for today already exists.");
