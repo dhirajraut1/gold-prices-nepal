@@ -200,6 +200,21 @@
         <p>Track historical prices of gold and silver in Nepalese market</p>
       </header>
 
+      <div class="stats">
+        <div class="stat-card">
+          <div class="stat-label">Current Price (Fine Gold)</div>
+          <div class="stat-value" id="currentGold">Loading...</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Current Price (Silver)</div>
+          <div class="stat-value" id="currentSilver">Loading...</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">30 Day Change</div>
+          <div class="stat-value" id="monthChange">+2.5%</div>
+        </div>
+      </div>
+      <br />
       <div class="card">
         <h2 class="chart-title">Yearly Price Trends</h2>
         <div class="controls">
@@ -286,31 +301,65 @@
           <canvas id="monthlyChart"></canvas>
         </div>
       </div>
-
-      <div class="stats">
-        <div class="stat-card">
-          <div class="stat-label">Current Price (Fine Gold)</div>
-          <div class="stat-value" id="currentGold">Loading...</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">Current Price (Silver)</div>
-          <div class="stat-value" id="currentSilver">Loading...</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">30 Day Change</div>
-          <div class="stat-value" id="monthChange">+2.5%</div>
-        </div>
-      </div>
     </div>
 
     <script>
       // Global variables
+      let rawData = [];
       let chartData = {};
-      let currentMetal = "fine_gold";
-      let currentMonthMetal = "fine_gold";
+      let currentMetal = "fineGold";
+      let currentMonthMetal = "fineGold";
       let yearlyChart, monthlyChart;
 
-      // Initialize charts
+      // Month names in BS
+      const bsMonths = [
+        "Baisakh",
+        "Jestha",
+        "Ashad",
+        "Shrawan",
+        "Bhadra",
+        "Ashoj",
+        "Kartik",
+        "Mangsir",
+        "Poush",
+        "Magh",
+        "Falgun",
+        "Chaitra",
+      ];
+
+      // Parse BS date string to {year, month, day}
+      function parseBS(bs) {
+        const [year, m, d] = bs.split("-").map(Number);
+        return { year, month: m, day: d };
+      }
+
+      // Transform raw array data to {year: {month: [days]}}
+      function transformData(data) {
+        const result = {};
+        data.forEach((row) => {
+          const { year, month, day } = parseBS(row.bs);
+          const monthName = bsMonths[month - 1];
+          if (!result[year]) result[year] = {};
+          if (!result[year][monthName]) result[year][monthName] = [];
+          result[year][monthName].push({
+            date: day,
+            fineGold: row.fineGold ?? null,
+            standardGold: row.standardGold ?? null,
+            silver: row.silver ?? null,
+            ad: row.ad,
+            bs: row.bs,
+          });
+        });
+        // Sort days in each month
+        Object.values(result).forEach((months) => {
+          Object.values(months).forEach((days) =>
+            days.sort((a, b) => a.date - b.date)
+          );
+        });
+        return result;
+      }
+
+      // Initialize charts (same as before)
       function initCharts() {
         const yearlyCtx = document
           .getElementById("yearlyChart")
@@ -344,9 +393,7 @@
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-              legend: {
-                display: false,
-              },
+              legend: { display: false },
               tooltip: {
                 mode: "index",
                 intersect: false,
@@ -362,9 +409,7 @@
             scales: {
               y: {
                 beginAtZero: false,
-                grid: {
-                  color: "rgba(0, 0, 0, 0.1)",
-                },
+                grid: { color: "rgba(0, 0, 0, 0.1)" },
                 ticks: {
                   callback: function (value) {
                     return "रु " + value.toLocaleString();
@@ -372,13 +417,8 @@
                 },
               },
               x: {
-                grid: {
-                  display: false,
-                },
-                ticks: {
-                  maxRotation: 45,
-                  minRotation: 45,
-                },
+                grid: { display: false },
+                ticks: { maxRotation: 45, minRotation: 45 },
               },
             },
           },
@@ -409,9 +449,7 @@
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-              legend: {
-                display: false,
-              },
+              legend: { display: false },
               tooltip: {
                 mode: "index",
                 intersect: false,
@@ -427,35 +465,28 @@
             scales: {
               y: {
                 beginAtZero: false,
-                grid: {
-                  color: "rgba(0, 0, 0, 0.1)",
-                },
+                grid: { color: "rgba(0, 0, 0, 0.1)" },
                 ticks: {
                   callback: function (value) {
                     return "रु " + value.toLocaleString();
                   },
                 },
               },
-              x: {
-                grid: {
-                  display: false,
-                },
-              },
+              x: { grid: { display: false } },
             },
           },
         });
       }
 
-      // Load data from JSON file
+      // Load data from JSON file (array format)
       async function loadData() {
         try {
           const response = await fetch(
-            "https://raw.githubusercontent.com/dhirajraut1/gold-prices-nepal/refs/heads/main/gold_silver_prices.json"
+            "https://raw.githubusercontent.com/dhirajraut1/gold-prices-nepal/refs/heads/main/scraper/gold_silver_prices.json"
           );
-          if (!response.ok) {
-            throw new Error("Failed to load JSON file");
-          }
-          chartData = await response.json();
+          if (!response.ok) throw new Error("Failed to load JSON file");
+          rawData = await response.json();
+          chartData = transformData(rawData);
           populateYearDropdowns();
           updateYearlyChart();
           updateMonthlyChart();
@@ -463,7 +494,7 @@
         } catch (error) {
           console.error("Error loading data:", error);
           showError(
-            "Could not load data file. Please make sure gold_silver_prices.json is in the same directory."
+            "Could not load data file. Please make sure gold_silver_prices.json is in the correct format."
           );
         }
       }
@@ -471,30 +502,23 @@
       function populateYearDropdowns() {
         const yearSelect = document.getElementById("yearSelect");
         const monthYearSelect = document.getElementById("monthYearSelect");
-
-        // Clear existing options
         yearSelect.innerHTML = "";
         monthYearSelect.innerHTML = "";
 
-        // Get years and sort them numerically
         const years = Object.keys(chartData).sort(
           (a, b) => parseInt(a) - parseInt(b)
         );
-
         years.forEach((year) => {
           const option1 = document.createElement("option");
           option1.value = year;
           option1.textContent = `${year} BS`;
-
           const option2 = document.createElement("option");
           option2.value = year;
           option2.textContent = `${year} BS`;
-
           yearSelect.appendChild(option1);
           monthYearSelect.appendChild(option2);
         });
 
-        // Set to latest year by default
         if (years.length > 0) {
           yearSelect.value = years[years.length - 1];
           monthYearSelect.value = years[years.length - 1];
@@ -504,34 +528,15 @@
       function updateYearlyChart() {
         const year = document.getElementById("yearSelect").value;
         const data = chartData[year];
-
         if (!data) {
           showError(`No data available for year ${year}`);
           return;
         }
 
         const allData = [];
-        const monthOrder = [
-          "Baisakh",
-          "Jestha",
-          "Ashad",
-          "Shrawan",
-          "Bhadra",
-          "Ashoj",
-          "Kartik",
-          "Mangsir",
-          "Mansir",
-          "Poush",
-          "Magh",
-          "Falgun",
-          "Chaitra",
-        ];
-
-        monthOrder.forEach((month) => {
+        bsMonths.forEach((month) => {
           if (data[month]) {
-            // Sort days by date within each month
-            const sortedDays = data[month].sort((a, b) => a.date - b.date);
-            sortedDays.forEach((day) => {
+            data[month].forEach((day) => {
               if (
                 day[currentMetal] !== null &&
                 day[currentMetal] !== undefined
@@ -578,7 +583,6 @@
           return;
         }
 
-        // Sort days by date and filter out days without data
         const sortedData = data
           .filter(
             (day) =>
@@ -620,9 +624,9 @@
 
       function getMetalName(metalType) {
         switch (metalType) {
-          case "fine_gold":
+          case "fineGold":
             return "Fine Gold";
-          case "standard_gold":
+          case "standardGold":
             return "Standard Gold";
           case "silver":
             return "Silver";
@@ -640,23 +644,19 @@
 
           const latestYear = years[years.length - 1];
           const yearData = chartData[latestYear];
-          const months = Object.keys(yearData);
-
+          const months = bsMonths.filter((m) => yearData[m]);
           if (months.length === 0) return;
 
-          // Get the latest month (assuming months are in order)
           const latestMonth = months[months.length - 1];
           const monthData = yearData[latestMonth];
-
           if (!monthData || monthData.length === 0) return;
 
-          // Get the latest day data
           const latestDay = monthData[monthData.length - 1];
 
-          if (latestDay.fine_gold) {
+          if (latestDay.fineGold) {
             document.getElementById(
               "currentGold"
-            ).textContent = `रु ${latestDay.fine_gold.toLocaleString()}`;
+            ).textContent = `रु ${latestDay.fineGold.toLocaleString()}`;
           }
 
           if (latestDay.silver) {
@@ -665,10 +665,10 @@
             ).textContent = `रु ${latestDay.silver.toLocaleString()}`;
           }
 
-          // Calculate 30-day change (simplified)
+          // Calculate 30-day change for fineGold
           if (monthData.length > 1) {
-            const firstPrice = monthData[0].fine_gold;
-            const lastPrice = latestDay.fine_gold;
+            const firstPrice = monthData[0].fineGold;
+            const lastPrice = latestDay.fineGold;
             if (firstPrice && lastPrice) {
               const change = ((lastPrice - firstPrice) / firstPrice) * 100;
               document.getElementById("monthChange").textContent = `${
@@ -700,32 +700,48 @@
           .getElementById("monthSelect")
           .addEventListener("change", updateMonthlyChart);
 
-        document.querySelectorAll(".metal-toggle .metal-btn").forEach((btn) => {
-          btn.addEventListener("click", function () {
-            const metalType = this.getAttribute("data-metal");
-            const toggleContainer = this.closest(".metal-toggle");
-
-            // Remove active class from all buttons in this toggle group
-            toggleContainer
-              .querySelectorAll(".metal-btn")
-              .forEach((b) => b.classList.remove("active"));
-
-            // Add active class to clicked button
-            this.classList.add("active");
-
-            // Determine which chart to update
-            if (
-              toggleContainer.closest(".control-group").querySelector("label")
-                .textContent === "Metal Type:"
-            ) {
-              currentMetal = metalType;
+        // For yearly chart
+        document
+          .querySelectorAll(".card:nth-of-type(1) .metal-toggle .metal-btn")
+          .forEach((btn) => {
+            btn.addEventListener("click", function () {
+              const metalType = this.getAttribute("data-metal");
+              const toggleContainer = this.closest(".metal-toggle");
+              toggleContainer
+                .querySelectorAll(".metal-btn")
+                .forEach((b) => b.classList.remove("active"));
+              this.classList.add("active");
+              // Map to new keys
+              currentMetal =
+                metalType === "fine_gold"
+                  ? "fineGold"
+                  : metalType === "standard_gold"
+                  ? "standardGold"
+                  : "silver";
               updateYearlyChart();
-            } else {
-              currentMonthMetal = metalType;
-              updateMonthlyChart();
-            }
+            });
           });
-        });
+
+        // For monthly chart
+        document
+          .querySelectorAll(".card:nth-of-type(2) .metal-toggle .metal-btn")
+          .forEach((btn) => {
+            btn.addEventListener("click", function () {
+              const metalType = this.getAttribute("data-metal");
+              const toggleContainer = this.closest(".metal-toggle");
+              toggleContainer
+                .querySelectorAll(".metal-btn")
+                .forEach((b) => b.classList.remove("active"));
+              this.classList.add("active");
+              currentMonthMetal =
+                metalType === "fine_gold"
+                  ? "fineGold"
+                  : metalType === "standard_gold"
+                  ? "standardGold"
+                  : "silver";
+              updateMonthlyChart();
+            });
+          });
       }
 
       // Initialize everything
