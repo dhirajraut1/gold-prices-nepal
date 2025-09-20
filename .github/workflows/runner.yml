@@ -17,7 +17,11 @@ jobs:
         with:
           node-version: "22"
 
+      - name: Change directory
+        run: cd scraper
+
       - name: Install dependencies
+        working-directory: scraper
         run: npm install
 
       - name: Run scraper
