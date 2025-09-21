@@ -2,7 +2,7 @@ name: Scrape Gold Prices Daily
 
 on:
   schedule:
-    - cron: "0 10 * * *"
+    - cron: "0 4 * * *" # Run at 10 AM NPT
   workflow_dispatch:
 
 jobs:
