@@ -15,7 +15,7 @@ const headers = {
 };
 
 async function scrapeGoldPrice() {
-  const url = "https://www.fenegosida.org/";
+  const url = "https://fenegosida.org/";
   try {
     const { data } = await axios.get(url, { headers });
     const dom = new JSDOM(data);
