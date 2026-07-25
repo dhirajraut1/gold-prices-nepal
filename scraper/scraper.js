@@ -17,7 +17,7 @@ async function fetchGoldPrice() {
   try {
     const { data } = await axios.get(url, { headers });
     
-    // Map the API response to a consistent format similar to the previous scraper
+    // Map the API response to a consistent format
     const prices = data.map((item) => ({
       type: item.rateType,
       price: item.baseRatePerGram,
@@ -36,7 +36,6 @@ async function main() {
 
   // Match based on the API's rateType for 1 tola rates.
   // Includes fallback to English strings just in case the API occasionally returns them.
-  // "सुन" = Gold, "चाँदी" = Silver, "१ तोला" = 1 Tola
   const fineGoldObj = prices.find(
     (item) => 
       item.type === "FINE GOLD (9999)" || 
@@ -64,6 +63,14 @@ async function main() {
         ).padStart(2, "0")}`
       : bsDate?.toString?.() ?? "";
 
+  // Console the extracted prices for visibility
+  console.log("=== Today's Fetched Prices ===");
+  console.log("AD Date:", ad);
+  console.log("BS Date:", bs);
+  console.log("Fine Gold (1 Tola):", fineGold, `(Matched type: "${fineGoldObj?.type || 'Not Found'}")`);
+  console.log("Silver (1 Tola):", silver, `(Matched type: "${silverObj?.type || 'Not Found'}")`);
+  console.log("==============================");
+
   const __filename = fileURLToPath(import.meta.url);
   const __dirname = dirname(__filename);
   const filePath = join(__dirname, "gold_silver_prices.json");
@@ -81,9 +88,9 @@ async function main() {
   if (!exists) {
     data.push({ ad, bs, fineGold, silver });
     fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
-    console.log("Added new entry:", { ad, bs, fineGold, silver });
+    console.log("✅ Successfully added new entry to gold_silver_prices.json");
   } else {
-    console.log("Entry for today already exists.");
+    console.log("⚠️ Entry for today already exists in the file.");
   }
 }
 
