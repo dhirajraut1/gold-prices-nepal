@@ -20,7 +20,7 @@ async function fetchGoldPrice() {
     // Map the API response to a consistent format
     const prices = data.map((item) => ({
       type: item.rateType,
-      price: item.baseRatePerGram,
+      price: item.todayBaseRatePerGram,
       date: new Date(item.todayDate),
     }));
 
@@ -48,9 +48,15 @@ async function main() {
       (item.type.includes("चाँदी") && item.type.includes("१ तोला"))
   );
 
-  // Use Math.round to safely handle potential floating point numbers from the API
-  const fineGold = fineGoldObj ? Math.round(fineGoldObj.price) : 0;
-  const silver = silverObj ? Math.round(silverObj.price) : 0;
+  if (!fineGoldObj || !Number.isFinite(fineGoldObj.price)) {
+    throw new Error("Today's one-tola gold price was not present in the API response.");
+  }
+  if (!silverObj || !Number.isFinite(silverObj.price)) {
+    throw new Error("Today's one-tola silver price was not present in the API response.");
+  }
+
+  const fineGold = Math.round(fineGoldObj.price);
+  const silver = Math.round(silverObj.price);
 
   const today = fineGoldObj?.date ? new Date(fineGoldObj.date) : new Date();
   const ad = today.toISOString().slice(0, 10);
